@@ -2,15 +2,19 @@ import sqlite3
 from cnf import DB
 
 conn = sqlite3.connect(DB, check_same_thread=False)
+conn.row_factory = sqlite3.Row
 cursor = conn.cursor()
+
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS buffered_data (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     timestamp INTEGER,
     temperature REAL,
     humidity REAL,
-    pm25 INTEGER,
-    pm10 INTEGER,
+    pm25 REAL,
+    pm10 REAL,
+    aqi_value REAL,
+    aqi_category TEXT,
     latitude REAL,
     longitude REAL
 )
@@ -22,21 +26,25 @@ def buffer_data(sensor_data):
     cursor.execute(
         """
         INSERT INTO buffered_data
-        (timestamp, temperature, humidity, pm25, pm10, latitude, longitude)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    """,
+        (timestamp, temperature, humidity, pm25, pm10, aqi_value, aqi_category, latitude, longitude)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
         (
-            int(sensor_data["ts"]),
+            sensor_data["ts"],
             sensor_data["temperature"],
             sensor_data["humidity"],
             sensor_data["pm25"],
             sensor_data["pm10"],
+            sensor_data["aqi_value"],
+            sensor_data["aqi_category"],
             sensor_data["latitude"],
             sensor_data["longitude"],
         ),
     )
     conn.commit()
-    print(f"[BUFFERED] PM2.5: {sensor_data['pm25']}, PM10: {sensor_data['pm10']}")
+    print(
+        f"[BUFFERED] PM2.5: {sensor_data['pm25']}, PM10: {sensor_data['pm10']}, AQI: {sensor_data['aqi_value']}, Category: {sensor_data['aqi_category']}"
+    )
 
 
 def fetch_buffered_data():
